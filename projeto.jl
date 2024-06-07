@@ -63,6 +63,34 @@ function graph3(t0,tf,f_samp)
 
 end
 
+function graph4(t0,t_end,f_samp)
+    #time values
+    t = range(t0, stop=t_end, length=round(Int, t_end * f_samp))
+    
+    #message argument
+    x = (t .- 100e-6) .* 1e6
+
+    #getting message spectrum
+    M_f = fftshift(fft(msg(x))) / length(msg(x))
+    frequencies = range(-f_samp/2, stop=f_samp/2, length=length(M_f))
+    freq_range = (frequencies .>= -2e6) .& (frequencies .<= 2e6)
+    spectrum = abs.(M_f[freq_range])
+    
+    plot(frequencies[freq_range] ./ 1e6, spectrum, xlabel="Frequency (MHz)", ylabel="Magnitude", title="Baseband Message Signal Spectrum")
+    
+    #calculating half-power bandwidth (-3dB)
+    peak_magnitude = maximum(spectrum)
+    half_power_point = peak_magnitude / √2
+    indices_above_half_power = findall(x -> x >= half_power_point, spectrum)
+    bandwidth_half_power = frequencies[maximum(indices_above_half_power)] - frequencies[minimum(indices_above_half_power)]
+    
+    #converting into MHz
+    bandwidth_half_power_mhz = bandwidth_half_power / 1e6
+    
+    println("Largura de meia potência (-3dB): $bandwidth_half_power_mhz MHz")
+    
+end
+
 function graph5(t0,tf,f_samp,fc)
     #time values
     t = range(0, stop=t_end, length=round(Int, t_end * f_samp))
@@ -85,29 +113,34 @@ end
 begin
     # samp freq of 50MHz
     f_samp = 50e6
+
+    t0 = 0
+    t0_3_5 = 90e-6
+
+    tf1 = 5e-6
+    tf2 = 200e-6
+    tf3_5 = 110e-6
+    
     t_end = 200e-6
 
     msg(t) = sinc.(t);
     c(fc,t) = cos.(2*π*fc.*t);
 
+    graph3(t0_3_5,tf3_5,f_samp)
+    savefig("graph3.png")
+
+    graph4(t0,t_end,f_samp)
+    savefig("graph4.png")
+
     for fc in [2e6,0.5e6]
-        t0 = 0
-        t0_3_5 = 90e-6
-
-        tf1 = 5e-6
-        tf2 = 200e-6
-        tf3_5 = 110e-6 
-
         graph1(t0,tf1,f_samp,fc)
         savefig("graph1_fc_$(fc/1e6)MHz.png")
         
         graph2(t0,tf2,f_samp,fc)
         savefig("graph2_fc_$(fc/1e6)MHz.png")
         
-        graph3(t0_3_5,tf3_5,f_samp)
-        savefig("graph3_fc_$(fc/1e6)MHz.png")
-        
         graph5(t0_3_5,tf3_5,f_samp,fc)
         savefig("graph5_fc_$(fc/1e6)MHz.png")
     end
+
 end
