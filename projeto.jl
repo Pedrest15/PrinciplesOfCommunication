@@ -47,7 +47,7 @@ end
 
 function graph3(t0,tf,f_samp)
     #time values
-    t = range(0, stop=t_end, length=round(Int, t_end * f_samp))
+    t = range(0, stop=tf, length=round(Int, tf * f_samp))
 
     # sinc argument
     x = (t .- 100e-6) .* 1e6
@@ -63,9 +63,9 @@ function graph3(t0,tf,f_samp)
 
 end
 
-function graph4(t0,t_end,f_samp)
+function graph4(t0,tf,f_samp)
     #time values
-    t = range(t0, stop=t_end, length=round(Int, t_end * f_samp))
+    t = range(t0, stop=tf, length=round(Int, tf * f_samp))
     
     #message argument
     x = (t .- 100e-6) .* 1e6
@@ -93,10 +93,10 @@ end
 
 function graph5(t0,tf,f_samp,fc)
     #time values
-    t = range(0, stop=t_end, length=round(Int, t_end * f_samp))
+    t = range(0, stop=tf, length=round(Int, tf * f_samp))
     
     #sinc argment
-    x = (range(0, stop=t_end * 1e6, length=round(Int, t_end * f_samp)) .- 100)
+    x = (range(0, stop= tf * 1e6, length=round(Int, tf * f_samp)) .- 100)
     
     #modulation of the message m(t) with the carrier c(t)
     s = msg(x) .* c(fc,t)
@@ -108,6 +108,58 @@ function graph5(t0,tf,f_samp,fc)
     plot(t_interval .* 1e6, s_t_interval, xlabel="Time (µs)", ylabel="Amplitude", title="Modulated Signal in the 90-110µs Interval")
 
 end
+
+function graph6(t0,tf,f_samp,fc)
+    #time values
+    t = range(t0, stop=tf, length=round(Int, tf * f_samp))
+
+    #sinc argment
+    x = (range(t0, stop= tf * 1e6, length=round(Int, tf * f_samp)) .- 100)
+
+    #modulation of the message m(t) with the carrier c(t)
+    s = msg(x) .* c(fc,t)
+
+
+
+    #getting message spectrum
+    S_f = fftshift(fft(s) / length(s))
+    freq = range(-f_samp/2, stop=f_samp/2, length=length(S_f))
+
+    # define frequenci range
+    freq_range = (freq .>= -5e6) .& (freq .<= 5e6)
+
+    spectrum = abs.(S_f[freq_range])
+
+    plot(freq[freq_range] ./ 1e6, spectrum, xlabel="Frequency (MHz)", ylabel="Magnitude",title="Spectrum of the Modulated Message Signal")
+
+end
+
+
+function graph7(t0, tf, f_samp, fc)
+
+    #time values
+    t = range(t0, stop = tf, length=round(Int, tf * f_samp))
+
+    #sinc argment
+    x = (range(t0, stop= tf * 1e6, length=round(Int, tf * f_samp)) .- 100)
+
+    #modulated signal
+    s = msg(x) .* c(fc,t)
+
+    # demodulated signal
+    ds = s .* c(fc,t)
+
+    # getting spectrum
+    D_f = fftshift(fft(ds)/length(ds))
+    freq = range(-f_samp/2, stop=f_samp/2, length=length(D_f))
+    freq_range = (freq .>= -6e6 ).& (freq .<=6e6)
+
+    spectrum = abs.(D_f[freq_range])
+
+    plot(freq[freq_range] ./ 1e6, spectrum, xlabel="Frequency (MHz)", ylabel="Magnitude",title="Spectrum of the Demodulated Message Signal")
+
+end
+
 
 #main block
 begin
@@ -141,6 +193,12 @@ begin
         
         graph5(t0_3_5,tf3_5,f_samp,fc)
         savefig("graph5_fc_$(fc/1e6)MHz.png")
+
+        graph6(t0, t_end, f_samp, fc)
+        savefig("graph6_fc_$(fc / 1e6)MHz.png")
+
+        graph7(t0, t_end, f_samp, fc)
+        savefig("graph7_fc_$(fc / 1e6)MHz.png")
     end
 
 end
