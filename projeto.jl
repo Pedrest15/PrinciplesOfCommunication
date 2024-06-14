@@ -2,6 +2,8 @@
 using SpecialFunctions #to use sinc function
 using FFTW #to use fft
 using Plots
+using Statistics
+using Statistics  # to use corrcoef
 
 function graph1(t0,tf,f_samp,fc)
     #time values
@@ -160,6 +162,77 @@ function graph7(t0, tf, f_samp, fc)
 
 end
 
+function graph8(t0, tf, f_samp, fc)
+    #time values
+    t = range(t0, stop = tf, length=round(Int, tf * f_samp))
+
+    #sinc argment
+    x = (range(t0, stop= tf * 1e6, length=round(Int, tf * f_samp)) .- 100)
+
+    #modulated signal
+    s = msg(x) .* c(fc,t)
+
+    # demodulated signal
+    ds = s .* c(fc,t)
+
+    # getting spectrum
+    D_f = fftshift(fft(ds)/length(ds))
+    freq = range(-f_samp/2, stop=f_samp/2, length=length(D_f))
+    freq_range = (freq .>= -6e6 ).& (freq .<=6e6)
+
+    #Defining filter
+    filter = (freq .>= -2e6) .& (freq .<=2e6)
+
+    #Appling filter
+    D_f_filtered = D_f .* filter
+
+    # Spectrum filtered
+    spectrum_filtered = abs.(D_f_filtered[freq_range])
+
+    # Plotting filtered spectrum
+    plot(freq[freq_range] ./ 1e6, spectrum_filtered, xlabel="Frequency (MHz)", ylabel="Magnitude",title="Filtred spectrum")
+
+end
+
+function graph9(t0, tf, f_samp, fc)
+    #time values
+    t = range(t0, stop = tf, length=round(Int, tf * f_samp))
+
+    #sinc argment
+    x = (range(t0, stop= tf * 1e6, length=round(Int, tf * f_samp)) .- 100)
+
+    #modulated signal
+    s = msg(x) .* c(fc,t)
+
+    # demodulated signal
+    ds = s .* c(fc,t)
+
+    # getting spectrum
+    D_f = fftshift(fft(ds)/length(ds))
+    freq = range(-f_samp/2, stop=f_samp/2, length=length(D_f))
+    freq_range = (freq .>= -6e6 ).& (freq .<=6e6)
+
+    #Defining filter
+    filter = (freq .>= -2e6) .& (freq .<=2e6)
+
+    #Appling filter
+    D_f_filtered = D_f .* filter
+
+    # Aplying IFFT to recover signal
+    recovered = real(ifft(ifftshift(D_f_filtered)) * length(D_f_filtered))
+
+    # Comparing
+    original = msg(x)
+
+    # calculating correlation
+    similarity = cor(original, recovered)
+    println("Correlation coefficient: ", similarity)
+
+    # plotting both original and recovered
+    plot(t .*1e6, recovered, label="Recovered Message", xlabel="Time (µs)", ylabel="Amplitude", title="Recovered message")
+    plot!(t .* 1e6, original, label="Original Message")
+
+end
 
 #main block
 begin
@@ -184,6 +257,7 @@ begin
     graph4(t0,t_end,f_samp)
     savefig("graph4.png")
 
+
     for fc in [2e6,0.5e6]
         graph1(t0,tf1,f_samp,fc)
         savefig("graph1_fc_$(fc/1e6)MHz.png")
@@ -199,6 +273,14 @@ begin
 
         graph7(t0, t_end, f_samp, fc)
         savefig("graph7_fc_$(fc / 1e6)MHz.png")
+
+        
+        graph8(t0, t_end, f_samp, fc)
+        savefig("graph8_fc_$(fc / 1e6)MHz.png")
+
+        graph9(t0, t_end, f_samp, fc)
+        savefig("graph9_fc_$(fc / 1e6)MHz.png")
+
     end
 
 end
