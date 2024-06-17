@@ -95,9 +95,11 @@ function plot_filtered_spectrum(t0, tf, f_samp, fc)
     t = time_values(t0, tf, f_samp)
     x = (range(t0, stop=tf * 1e6, length=length(t)) .- 100)
     s = msg(x) .* c(fc, t)
-    spectrum, frequencies = compute_spectrum(s, f_samp)
+    ds = s .* c(fc, t)
+    spectrum, frequencies = compute_spectrum(ds, f_samp)
     freq_range = (frequencies .>= -6e6) .& (frequencies .<= 6e6)
-    filter = (frequencies .>= -2e6) .& (frequencies .<= 2e6)
+    filter = abs.(frequencies) .<= 2e6
+    #filter = (frequencies .>= -2e6) .& (frequencies .<= 2e6)
     D_f_filtered = spectrum .* filter
     spectrum_filtered = abs.(D_f_filtered[freq_range])
     plot(frequencies[freq_range] ./ 1e6, spectrum_filtered,
